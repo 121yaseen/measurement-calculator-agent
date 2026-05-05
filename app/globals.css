@@ -2,17 +2,17 @@
 @plugin "@tailwindcss/typography";
 
 :root {
-  --bg: #0b0b0d;
-  --surface: #131316;
-  --surface-2: #1b1b1f;
-  --border: #232328;
-  --border-2: #2e2e35;
-  --text: #dddde8;
-  --text-muted: #52525c;
-  --text-dim: #38383f;
-  --amber: #f59e0b;
-  --amber-dim: rgba(245, 158, 11, 0.08);
-  --amber-border: rgba(245, 158, 11, 0.25);
+  --bg: #f5f4f0;
+  --surface: #ffffff;
+  --surface-2: #eeecea;
+  --border: #e0ded8;
+  --border-2: #cccac4;
+  --text: #1a1918;
+  --text-muted: #7a7874;
+  --text-dim: #b8b5b0;
+  --amber: #c97a0a;
+  --amber-dim: rgba(201, 122, 10, 0.07);
+  --amber-border: rgba(201, 122, 10, 0.22);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -44,7 +44,7 @@ body {
 
 /* Streaming dots */
 @keyframes dot-pulse {
-  0%, 80%, 100% { opacity: 0.2; transform: scale(0.75); }
+  0%, 80%, 100% { opacity: 0.25; transform: scale(0.75); }
   40%            { opacity: 1;   transform: scale(1); }
 }
 .dot {
@@ -55,13 +55,14 @@ body {
   animation: dot-pulse 1.3s ease-in-out infinite;
 }
 
-/* Canvas dot grid */
+/* Canvas dot grid — graph paper feel */
 .dot-grid {
+  background-color: #ffffff;
   background-image: radial-gradient(circle, var(--border-2) 1px, transparent 1px);
   background-size: 22px 22px;
 }
 
-/* Prose dark overrides */
+/* Prose light overrides */
 .prose { color: var(--text) !important; max-width: none !important; }
 .prose :where(strong) { color: var(--text) !important; font-weight: 600; }
 .prose :where(h1,h2,h3,h4,h5,h6) { color: var(--text) !important; font-weight: 600; margin-top: 1em; margin-bottom: 0.4em; }
@@ -70,7 +71,7 @@ body {
 .prose :where(code):not(:where(pre *)) {
   color: var(--amber) !important;
   background: var(--surface-2) !important;
-  border: 1px solid var(--border-2);
+  border: 1px solid var(--border);
   border-radius: 3px;
   padding: 1px 5px;
   font-size: 0.9em;
@@ -90,8 +91,7 @@ body {
   font-style: normal !important;
 }
 .prose :where(hr) { border-color: var(--border) !important; }
-.prose :where(table) { font-size: 0.9em; }
-.prose :where(th) { color: var(--text) !important; border-color: var(--border-2) !important; }
+.prose :where(th) { color: var(--text) !important; border-color: var(--border) !important; }
 .prose :where(td) { border-color: var(--border) !important; }
 
 /* Placeholder color */

@@ -74,7 +74,7 @@ export default function ChatPage() {
   )
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', height: '100%', overflow: 'hidden' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '40% 60%', height: '100%', overflow: 'hidden' }}>
       {/* ── Left: Chat ── */}
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
         {/* Header */}

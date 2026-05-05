@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`h-full ${mono.variable}`} style={{ fontFamily: 'var(--font-mono), monospace' }}>
+    <html lang="en" className={`h-full ${mono.variable}`} style={{ fontFamily: 'var(--font-mono), monospace', colorScheme: 'light', background: '#f5f4f0' }}>
       <body className="h-full">{children}</body>
     </html>
   )

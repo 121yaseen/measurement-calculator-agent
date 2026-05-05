@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { MessageList } from '@/components/MessageList'
 import { InputBar } from '@/components/InputBar'
+import { CanvasPanel } from '@/components/CanvasPanel'
 import { streamChat } from '@/lib/streamChat'
 import type { Attachment, Message } from '@/lib/types'
 
@@ -20,7 +21,6 @@ function buildOpenAIContent(
     return parts
   }
 
-  // PDF: prepend extracted text to the user message
   return `${attachment.data}\n\n${text}`.trim()
 }
 
@@ -41,13 +41,8 @@ export default function ChatPage() {
         content: text,
         attachment,
       }
-
       const assistantId = crypto.randomUUID()
-      const assistantMsg: Message = {
-        id: assistantId,
-        role: 'assistant',
-        content: '',
-      }
+      const assistantMsg: Message = { id: assistantId, role: 'assistant', content: '' }
 
       setMessages((prev) => [...prev, userMsg, assistantMsg])
       setStreaming(true)
@@ -55,24 +50,19 @@ export default function ChatPage() {
       try {
         const history = [...messages, userMsg].map((m) => ({
           role: m.role,
-          content:
-            m.role === 'user'
-              ? buildOpenAIContent(m.content, m.attachment)
-              : m.content,
+          content: m.role === 'user' ? buildOpenAIContent(m.content, m.attachment) : m.content,
         }))
 
         for await (const chunk of streamChat(history)) {
           setMessages((prev) =>
-            prev.map((m) =>
-              m.id === assistantId ? { ...m, content: m.content + chunk } : m,
-            ),
+            prev.map((m) => (m.id === assistantId ? { ...m, content: m.content + chunk } : m)),
           )
         }
       } catch (err) {
         setMessages((prev) =>
           prev.map((m) =>
             m.id === assistantId
-              ? { ...m, content: `Error: ${err instanceof Error ? err.message : String(err)}` }
+              ? { ...m, content: `error: ${err instanceof Error ? err.message : String(err)}` }
               : m,
           ),
         )
@@ -84,13 +74,39 @@ export default function ChatPage() {
   )
 
   return (
-    <div className="flex h-full flex-col">
-      <header className="border-b border-gray-200 px-4 py-3">
-        <h1 className="text-base font-semibold">OpenClaw Chat</h1>
-      </header>
-      <MessageList messages={messages} streaming={streaming} />
-      <div ref={bottomRef} />
-      <InputBar onSend={handleSend} disabled={streaming} />
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', height: '100%', overflow: 'hidden' }}>
+      {/* ── Left: Chat ── */}
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+        {/* Header */}
+        <header style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          padding: '12px 20px',
+          borderBottom: '1px solid var(--border)',
+          background: 'var(--surface)',
+          flexShrink: 0,
+        }}>
+          <span style={{ color: 'var(--amber)', fontSize: '8px' }}>●</span>
+          <span style={{ color: 'var(--text)', fontSize: '13px', fontWeight: 500, letterSpacing: '0.02em' }}>
+            openclaw
+          </span>
+          <div style={{ flex: 1 }} />
+          <span style={{ color: 'var(--text-dim)', fontSize: '11px', letterSpacing: '0.05em' }}>
+            gpt-5.5
+          </span>
+        </header>
+
+        {/* Messages */}
+        <MessageList messages={messages} streaming={streaming} />
+        <div ref={bottomRef} />
+
+        {/* Input */}
+        <InputBar onSend={handleSend} disabled={streaming} />
+      </div>
+
+      {/* ── Right: Canvas ── */}
+      <CanvasPanel />
     </div>
   )
 }

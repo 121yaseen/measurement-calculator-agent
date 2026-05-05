@@ -1,6 +1,98 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
-html, body {
-  height: 100%;
+:root {
+  --bg: #0b0b0d;
+  --surface: #131316;
+  --surface-2: #1b1b1f;
+  --border: #232328;
+  --border-2: #2e2e35;
+  --text: #dddde8;
+  --text-muted: #52525c;
+  --text-dim: #38383f;
+  --amber: #f59e0b;
+  --amber-dim: rgba(245, 158, 11, 0.08);
+  --amber-border: rgba(245, 158, 11, 0.25);
 }
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body { height: 100%; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* Message entrance */
+@keyframes msg-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.msg-in { animation: msg-in 0.18s ease-out both; }
+
+/* Streaming dots */
+@keyframes dot-pulse {
+  0%, 80%, 100% { opacity: 0.2; transform: scale(0.75); }
+  40%            { opacity: 1;   transform: scale(1); }
+}
+.dot {
+  display: inline-block;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--amber);
+  animation: dot-pulse 1.3s ease-in-out infinite;
+}
+
+/* Canvas dot grid */
+.dot-grid {
+  background-image: radial-gradient(circle, var(--border-2) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+/* Prose dark overrides */
+.prose { color: var(--text) !important; max-width: none !important; }
+.prose :where(strong) { color: var(--text) !important; font-weight: 600; }
+.prose :where(h1,h2,h3,h4,h5,h6) { color: var(--text) !important; font-weight: 600; margin-top: 1em; margin-bottom: 0.4em; }
+.prose :where(p) { margin-top: 0.5em; margin-bottom: 0.5em; }
+.prose :where(ul,ol) { padding-left: 1.4em; }
+.prose :where(code):not(:where(pre *)) {
+  color: var(--amber) !important;
+  background: var(--surface-2) !important;
+  border: 1px solid var(--border-2);
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-size: 0.9em;
+}
+.prose :where(pre) {
+  background: var(--surface-2) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 6px !important;
+  color: var(--text) !important;
+}
+.prose :where(pre code) { background: transparent !important; border: none !important; color: inherit !important; padding: 0; }
+.prose :where(a) { color: var(--amber) !important; text-decoration: none; }
+.prose :where(a:hover) { text-decoration: underline; }
+.prose :where(blockquote) {
+  border-left: 2px solid var(--amber-border) !important;
+  color: var(--text-muted) !important;
+  font-style: normal !important;
+}
+.prose :where(hr) { border-color: var(--border) !important; }
+.prose :where(table) { font-size: 0.9em; }
+.prose :where(th) { color: var(--text) !important; border-color: var(--border-2) !important; }
+.prose :where(td) { border-color: var(--border) !important; }
+
+/* Placeholder color */
+.placeholder-muted::placeholder { color: var(--text-dim); }

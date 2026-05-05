@@ -13,6 +13,7 @@ export function InputBar({ onSend, disabled }: Props) {
   const [text, setText] = useState('')
   const [attachment, setAttachment] = useState<Attachment | undefined>()
   const [loadingFile, setLoadingFile] = useState(false)
+  const [focused, setFocused] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   async function handleFile(file: File) {
@@ -51,57 +52,131 @@ export function InputBar({ onSend, disabled }: Props) {
     }
   }
 
+  const canSend = !disabled && !loadingFile && (text.trim().length > 0 || !!attachment)
+
   return (
-    <div className="border-t border-gray-200 bg-white p-4">
+    <div style={{ borderTop: '1px solid var(--border)', background: 'var(--surface)', padding: '12px 16px' }}>
+      {/* Attachment badge */}
       {attachment && (
-        <div className="mb-2 flex items-center gap-2 rounded bg-gray-100 px-3 py-1 text-sm text-gray-700">
-          <span>{attachment.type === 'pdf' ? '📄' : '🖼️'} {attachment.name}</span>
+        <div style={{
+          marginBottom: '8px',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '8px',
+          background: 'var(--surface-2)',
+          border: '1px solid var(--amber-border)',
+          borderRadius: '6px',
+          padding: '4px 10px',
+          fontSize: '11px',
+          color: 'var(--amber)',
+        }}>
+          <span>{attachment.type === 'pdf' ? '◫' : '⬚'}</span>
+          <span style={{ color: 'var(--text-muted)' }}>{attachment.name}</span>
           <button
-            className="ml-auto text-gray-400 hover:text-gray-600"
             onClick={() => setAttachment(undefined)}
+            style={{ color: 'var(--text-dim)', background: 'none', border: 'none', cursor: 'pointer', marginLeft: '2px', lineHeight: 1 }}
           >
-            ✕
+            ×
           </button>
         </div>
       )}
-      <div className="flex gap-2">
-        <textarea
-          className="flex-1 resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          rows={2}
-          placeholder="Message OpenClaw… (Shift+Enter for newline)"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={handleKey}
-          disabled={disabled}
-        />
-        <div className="flex flex-col gap-2">
-          <button
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm hover:bg-gray-50 disabled:opacity-50"
-            onClick={() => fileRef.current?.click()}
-            disabled={disabled || loadingFile}
-            title="Attach file"
-          >
-            {loadingFile ? '…' : '📎'}
-          </button>
-          <button
-            className="rounded-lg bg-blue-600 px-3 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
-            onClick={handleSend}
-            disabled={disabled || loadingFile || (!text.trim() && !attachment)}
-          >
-            Send
-          </button>
-        </div>
-        <input
-          ref={fileRef}
-          type="file"
-          accept=".pdf,.png,.jpg,.jpeg,.webp"
-          className="hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0]
-            if (file) handleFile(file)
+
+      {/* Input row */}
+      <div style={{
+        display: 'flex',
+        gap: '8px',
+        alignItems: 'flex-end',
+        background: 'var(--surface-2)',
+        border: `1px solid ${focused ? 'var(--amber-border)' : 'var(--border)'}`,
+        borderRadius: '10px',
+        padding: '8px 10px',
+        transition: 'border-color 0.15s ease',
+      }}>
+        {/* Attach button */}
+        <button
+          onClick={() => fileRef.current?.click()}
+          disabled={disabled || loadingFile}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: disabled || loadingFile ? 'not-allowed' : 'pointer',
+            color: loadingFile ? 'var(--amber)' : 'var(--text-muted)',
+            fontSize: '14px',
+            padding: '2px 4px',
+            lineHeight: 1,
+            flexShrink: 0,
+            opacity: disabled ? 0.4 : 1,
+            transition: 'color 0.15s',
           }}
+          title="Attach image or PDF"
+        >
+          {loadingFile ? '◌' : '⊕'}
+        </button>
+
+        {/* Textarea */}
+        <textarea
+          rows={1}
+          value={text}
+          onChange={(e) => {
+            setText(e.target.value)
+            // Auto-grow
+            e.target.style.height = 'auto'
+            e.target.style.height = Math.min(e.target.scrollHeight, 140) + 'px'
+          }}
+          onKeyDown={handleKey}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          disabled={disabled}
+          placeholder="message openclaw…"
+          style={{
+            flex: 1,
+            background: 'none',
+            border: 'none',
+            outline: 'none',
+            resize: 'none',
+            color: 'var(--text)',
+            fontFamily: 'inherit',
+            fontSize: '13px',
+            lineHeight: '1.5',
+            overflowY: 'hidden',
+            minHeight: '20px',
+            maxHeight: '140px',
+          }}
+          className="placeholder-muted"
         />
+
+        {/* Send button */}
+        <button
+          onClick={handleSend}
+          disabled={!canSend}
+          style={{
+            background: canSend ? 'var(--amber)' : 'var(--surface)',
+            border: `1px solid ${canSend ? 'var(--amber)' : 'var(--border)'}`,
+            borderRadius: '6px',
+            color: canSend ? '#000' : 'var(--text-dim)',
+            cursor: canSend ? 'pointer' : 'not-allowed',
+            padding: '4px 10px',
+            fontSize: '12px',
+            fontFamily: 'inherit',
+            fontWeight: 500,
+            flexShrink: 0,
+            transition: 'all 0.15s ease',
+          }}
+        >
+          ↑
+        </button>
       </div>
+
+      <input
+        ref={fileRef}
+        type="file"
+        accept=".pdf,.png,.jpg,.jpeg,.webp"
+        style={{ display: 'none' }}
+        onChange={(e) => {
+          const file = e.target.files?.[0]
+          if (file) handleFile(file)
+        }}
+      />
     </div>
   )
 }

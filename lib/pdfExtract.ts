@@ -1,9 +1,8 @@
-import * as pdfjs from 'pdfjs-dist'
-
-// Use CDN worker to avoid webpack bundling issues with the binary worker
-pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.mjs`
-
 export async function extractPdfText(file: File): Promise<string> {
+  // Dynamic import avoids SSR evaluation of browser-only APIs (DOMMatrix etc.)
+  const pdfjs = await import('pdfjs-dist')
+  pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.mjs`
+
   const arrayBuffer = await file.arrayBuffer()
   const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise
   const pageTexts: string[] = []

@@ -41,11 +41,12 @@ export default function ChatPage() {
         content: text,
         attachment,
       }
-      const assistantId = crypto.randomUUID()
-      const assistantMsg: Message = { id: assistantId, role: 'assistant', content: '' }
-
-      setMessages((prev) => [...prev, userMsg, assistantMsg])
+      setMessages((prev) => [...prev, userMsg])
       setStreaming(true)
+
+      // assistantId is null until the first chunk arrives — avoids an empty bubble
+      // appearing alongside the streaming dots
+      let assistantId: string | null = null
 
       try {
         const history = [...messages, userMsg].map((m) => ({
@@ -54,18 +55,24 @@ export default function ChatPage() {
         }))
 
         for await (const chunk of streamChat(history)) {
-          setMessages((prev) =>
-            prev.map((m) => (m.id === assistantId ? { ...m, content: m.content + chunk } : m)),
-          )
+          if (assistantId === null) {
+            assistantId = crypto.randomUUID()
+            setMessages((prev) => [...prev, { id: assistantId!, role: 'assistant', content: chunk }])
+          } else {
+            setMessages((prev) =>
+              prev.map((m) => (m.id === assistantId ? { ...m, content: m.content + chunk } : m)),
+            )
+          }
         }
       } catch (err) {
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantId
-              ? { ...m, content: `error: ${err instanceof Error ? err.message : String(err)}` }
-              : m,
-          ),
-        )
+        const errText = `error: ${err instanceof Error ? err.message : String(err)}`
+        if (assistantId === null) {
+          setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: 'assistant', content: errText }])
+        } else {
+          setMessages((prev) =>
+            prev.map((m) => (m.id === assistantId ? { ...m, content: errText } : m)),
+          )
+        }
       } finally {
         setStreaming(false)
       }

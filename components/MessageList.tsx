@@ -130,10 +130,7 @@ export function MessageList({ messages, streaming }: Props) {
             {/* Message text */}
             {msg.role === 'assistant' ? (
               <div className="prose prose-sm">
-                {msg.content
-                  ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
-                  : <span style={{ color: 'var(--text-dim)' }}>_</span>
-                }
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
               </div>
             ) : (
               msg.content && (

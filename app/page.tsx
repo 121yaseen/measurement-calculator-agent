@@ -91,10 +91,11 @@ export default function ChatPage() {
           <span style={{ color: 'var(--text)', fontSize: '13px', fontWeight: 500, letterSpacing: '0.02em' }}>
             openclaw
           </span>
-          <div style={{ flex: 1 }} />
-          <span style={{ color: 'var(--text-dim)', fontSize: '11px', letterSpacing: '0.05em' }}>
-            gpt-5.5
+          <span style={{ color: 'var(--border-2)', fontSize: '11px' }}>/</span>
+          <span style={{ color: 'var(--text-muted)', fontSize: '11px' }}>
+            engineering drawing agent
           </span>
+          <div style={{ flex: 1 }} />
         </header>
 
         {/* Messages */}

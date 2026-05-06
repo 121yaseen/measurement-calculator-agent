@@ -199,38 +199,82 @@ openclaw-chat/
 
 ### What's already in place
 
-The project ships as a fully self-contained Docker stack. A single `docker compose up --build` starts both the openclaw AI gateway and the Next.js web UI with no host dependencies beyond Docker. The two containers share a named volume for uploaded files, communicate over a Docker-internal network, and the gateway is protected by a token that only the backend holds. The stack is production-ready in the sense that it can be deployed on any host that runs Docker Compose.
+The project ships as a fully self-contained Docker stack. A single `docker compose up --build` starts both the openclaw AI gateway and the Next.js web UI with no host dependencies beyond Docker. The two containers share a named volume for uploaded files, communicate over a Docker-internal network, and the gateway is protected by a shared token that only the backend holds. The foundation is deliberately minimal — the architecture is designed to grow, and the most significant capabilities are yet to be built.
 
 ---
 
-### Agent capabilities — skills and visual communication
+### The core vision: an agent that thinks, draws, and talks
 
-The agent today operates from a single long system prompt. The next step is to break this into **skill files** — small, composable instruction modules that the agent loads per-situation. Planned skills include:
+The current agent communicates entirely through text. The long-term vision is fundamentally different: **an agent that uses the canvas as a first-class communication channel** — one that shows its working visually at every step, invites the user to intervene directly on the drawing, and builds dynamic interfaces on the fly when it needs input. Chat becomes the conversation; the canvas becomes the shared workspace.
 
-- **User persona skill** — instructs the agent on how to read the user's background (engineer, estimator, fabricator) from early messages and adjust its language, level of detail, and question style accordingly
-- **Clarification skill** — defines exactly when to pause and ask versus when to proceed, how to frame ambiguous-point questions as short numbered choices rather than open-ended prompts, and how to prioritise the highest-impact question first
-- **Visual communication skill** — instructs the agent to produce structured output (JSON or SVG annotations) that the canvas panel can render: highlighted boundary overlays, dimension callouts, detected hole/slot markers, and uncertainty regions drawn directly on top of the original drawing
-- **Prompt improvement** — ongoing work to tighten the agent's self-understanding of its task, reduce unnecessary hedging on clear drawings, and improve the quality of intermediate state descriptions it passes back to the UI
+The key insight driving this is that engineering drawing analysis is inherently a visual, iterative, and collaborative task. Text alone is the wrong medium. The agent should be able to say "I think the boundary is here" and *draw it*, ask "is this the right profile?" and *highlight it*, and present "here are the three candidate scales" as *an interactive picker on the canvas* rather than a paragraph. The goal is to give the agent the best possible tools so that it can make the best possible decisions — and then get out of its way.
 
 ---
 
-### Canvas panel — interactive rendering and drawing
+### Agent intelligence — skills and prompt architecture
 
-The right-hand canvas is currently a placeholder. The full vision:
+The agent currently operates from a single monolithic system prompt. This works but does not scale. The planned architecture replaces it with a **skill file system**: small, composable instruction modules that the agent selects and loads based on the current situation.
 
-- **Rendered state output** — after each agent turn the canvas shows the current working state: the detected outer boundary drawn as an SVG overlay on the original image, internal cutouts marked, dimension labels placed, and uncertain regions highlighted in a distinct colour
-- **Vector extraction display** — when the agent extracts a vector representation of the profile from a raster drawing it renders that vector so the user can visually verify it before the agent proceeds to calculate
-- **User annotation** — users can draw directly on the canvas to correct or clarify: redraw a boundary the agent got wrong, mark which hole to include or exclude, or add a missing dimension by clicking two points and typing a value
-- **Generative UI** — using generative UI tools the agent can dynamically render structured input widgets inside the canvas when it needs data: a unit selector, a scale picker, a dimension-confirmation table that the user edits in place rather than typing corrections in prose
+**Planned skills:**
+
+- **User persona skill** — the agent reads the user's background from the first few messages (engineer, estimator, fabricator, student) and adapts its language, level of technical detail, and question style accordingly. An experienced CNC programmer gets terse precision; a non-expert gets explained assumptions.
+
+- **Clarification and questioning skill** — a dedicated skill that defines exactly when the agent should pause versus proceed, how to frame ambiguous-point questions as tight numbered choices rather than open-ended requests, how to order questions by impact (the one whose answer changes the result the most comes first), and how to close a clarification loop without asking the same thing twice.
+
+- **Visual communication skill** — this is the most important planned skill. It teaches the agent to express its state visually rather than in prose. At every major step the agent emits structured output — SVG paths, bounding boxes, annotated regions, confidence heat maps — that the canvas renders in real time. Instead of writing "I identified the outer boundary and two internal slots", the agent draws the boundary in green, outlines the slots in orange, and marks the uncertain fillet radius with a pulsing question-mark annotation. The user sees exactly what the agent sees. Ambiguities become visible objects, not sentences.
+
+- **Intervention skill** — instructs the agent to treat every canvas state as an invitation for the user to intervene. At any point the user can redraw a boundary, move a dimension label, or mark a region as excluded. The agent reads these corrections as structured input and updates its working state accordingly, rather than requiring the user to describe corrections in text.
+
+- **Prompt refinement** — continuous improvement of the agent's core self-understanding: its task, its constraints, what precision means in this context, and how to communicate uncertainty without being unhelpfully vague.
+
+---
+
+### Tool ecosystem — giving the agent real capabilities
+
+Beyond skills, the agent needs **purpose-built tools** it can call when the situation demands. The planned tool layer is where the most significant engineering work lies.
+
+**Canvas rendering tools:**
+
+- `render_boundary(svg_path, colour, label)` — draws a detected profile boundary as an SVG overlay on the original drawing in the canvas panel, with a label and confidence indicator
+- `render_dimension(point_a, point_b, value, unit)` — places a dimension line between two points on the canvas, matching engineering drawing conventions
+- `render_annotation(region, type, message)` — marks a region of the drawing with a typed annotation: `uncertain`, `excluded`, `hole`, `fillet`, `confirmed`
+- `render_vector(paths)` — renders the full extracted vector representation of a profile, letting the user visually compare it against the original before the agent uses it for calculation
+- `clear_canvas()` / `reset_to_original()` — canvas state management tools the agent calls when moving between steps
+
+**Generative UI tools:**
+
+- `show_selector(title, options)` — renders an interactive choice widget on the canvas (e.g. "Which profile should I measure?" with the two candidates highlighted and clickable)
+- `show_dimension_table(rows)` — renders the extracted dimension table as an editable grid on the canvas; the user corrects values in place and the agent reads the result
+- `show_scale_picker(detected_candidates)` — presents detected scale candidates as a visual comparison the user picks from
+- `request_freehand_input(prompt)` — activates the drawing tools and prompts the user to draw something: a missing boundary segment, a clarifying region, a point pair for a missing dimension
+
+**User drawing tools (canvas-side):**
+
+- Freehand draw, polyline, rectangle, circle, and arc tools for the user to sketch corrections or additions directly on the drawing
+- Click-to-measure: the user clicks two points and enters a dimension value, which the agent ingests as a confirmed measurement
+- Region selection: the user drags to select a sub-region of the drawing and tells the agent to focus only on that area
+
+The underlying principle is that **the agent should know what tools exist and always choose the best one for the situation**. A well-tooled agent rarely needs to fall back to describing things in text when it could just show them.
+
+---
+
+### Canvas panel — the shared workspace
+
+With the tool layer in place, the canvas transforms from a placeholder into the primary workspace:
+
+- **Live state rendering** — the canvas updates after every agent turn, always showing the current working state: confirmed boundaries, detected features, open questions, and dimension callouts
+- **Step-by-step visual trace** — the user can scrub back through the agent's steps and see exactly how it arrived at each intermediate state, not just the final result
+- **Bidirectional interaction** — the user draws, the agent reads; the agent renders, the user corrects. The canvas is a shared surface, not a read-only display
+- **Overlay management** — multiple layers (original image, detected boundary, dimension annotations, uncertainty markers, user corrections) that can be toggled independently
 
 ---
 
 ### Result export
 
-Once a calculation is complete, users will be able to download the result as:
+Once a calculation is complete:
 
-- **PDF report** — the original drawing image, the detected boundary overlay, the dimension table, the full calculation trace, confidence levels, and the final area and perimeter result in a single shareable document
-- **CSV** — a flat row of extracted dimensions, area, perimeter, unit, and confidence for downstream use in costing or estimation tools
+- **PDF report** — the original drawing, the final boundary overlay, the dimension table, the full step-by-step calculation trace, confidence levels, and the area and perimeter result in a single shareable engineering document
+- **CSV** — extracted dimensions, area, perimeter, unit, and confidence as a flat row for downstream use in costing, estimation, or fabrication tools
 
 ---
 
@@ -238,29 +282,31 @@ Once a calculation is complete, users will be able to download the result as:
 
 The current build has no user concept. Planned additions:
 
-- **Authentication** — user accounts with login so calculations are tied to a specific user
-- **Session and chat history** — each conversation is persisted; users can return to a previous calculation, review the agent's reasoning, or continue from where they left off
-- **UI upgrades** — conversation list sidebar, session naming, and the ability to fork a conversation from any point to explore a different interpretation of the same drawing
+- **Authentication** — user accounts so calculations and sessions are tied to a specific user
+- **Persistent sessions** — each conversation is stored; users return to a previous job, review the agent's full reasoning trace, or continue from any point
+- **Session management UI** — conversation list, session naming, the ability to duplicate a session and explore a different interpretation of the same drawing
+- **Annotation persistence** — user drawings and corrections on the canvas are saved as part of the session, not lost on refresh
 
 ---
 
 ### Security hardening
 
-Several security improvements are planned beyond what is currently in place:
+Several significant security improvements are needed before this is production-ready:
 
-- **Prompt injection protection** — server-side detection and rejection of user messages that attempt to override the system prompt or escape the agent's role
-- **File validation** — strict MIME type and magic-byte checks on upload; file size limits; image dimension caps to prevent oversized raster files from being passed to the agent
+- **Prompt injection protection** — server-side detection and rejection of user messages that attempt to override the system prompt or escape the agent's engineering role
+- **User input validation** — sanitisation and length limits on all text inputs before they reach the agent
+- **File validation** — strict MIME type and magic-byte verification on upload; file size and image dimension limits to prevent oversized files from being passed to the agent
 - **Rate limiting** — per-IP throttling on `/api/upload` and `/api/chat` to prevent abuse and runaway API costs
-- **Periodic file deletion** — uploaded files are deleted automatically after a configurable TTL (e.g. 24 hours) so the volume does not grow unbounded and user data is not retained longer than needed
-- **Agent sandboxing** — ensure the openclaw gateway is inaccessible from outside the Docker network under all deployment configurations, with network policy rules to enforce this explicitly
+- **Periodic file deletion** — uploaded files purged automatically after a configurable TTL so the volume does not grow unbounded and user data is not retained longer than necessary
+- **Agent sandboxing** — explicit network policy rules ensuring the openclaw gateway is unreachable from outside the Docker network under all deployment configurations, with no public port exposure
 
 ---
 
 ### Observability
 
-- **Agent turn logging** — structured logs for every agent turn: which tool was called, what the agent's intermediate reasoning was, how long each step took, and what the agent returned
-- **Tracing** — distributed traces that connect a user message through the Next.js proxy to the openclaw gateway and back, making it easy to debug why the agent asked a particular question or produced an unexpected decomposition
-- **Cost tracking** — token usage per session surfaced in the UI so users and operators can see the cost of each calculation
+- **Agent turn logging** — structured logs for every agent turn: tool called, inputs, outputs, reasoning summary, duration, and token count
+- **Distributed tracing** — traces that span from the browser through the Next.js proxy to the openclaw gateway, making it straightforward to diagnose unexpected agent behaviour
+- **Cost tracking** — per-session token usage surfaced in the UI so both users and operators have visibility into calculation cost
 
 ---
 

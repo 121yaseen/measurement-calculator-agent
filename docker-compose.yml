@@ -31,6 +31,9 @@ services:
       # "openclaw" resolves to the gateway container via Docker's internal DNS
       OPENCLAW_BASE_URL: http://openclaw:18789
       OPENCLAW_TOKEN: ${OPENCLAW_TOKEN}
+      # Used by /api/upload to build the HTTP URL it returns to the agent.
+      # "nextjs" resolves inside the openclaw container via Docker's internal DNS.
+      AGENT_FILE_BASE_URL: http://nextjs:3000
     depends_on:
       - openclaw
     restart: unless-stopped

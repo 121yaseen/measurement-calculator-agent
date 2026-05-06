@@ -4,9 +4,11 @@ import { randomUUID } from 'crypto'
 
 export const runtime = 'nodejs'
 
-// Both containers mount the uploads named volume here.
-// This path is inside the openclaw workspace, which is on openclaw's allowed-reads list.
 const UPLOADS_DIR = '/openclaw-state/workspace/uploads'
+
+// Docker-internal base URL — openclaw container reaches Next.js at this address.
+// Set AGENT_FILE_BASE_URL in docker-compose to override (e.g. http://nextjs:3000).
+const AGENT_FILE_BASE_URL = process.env.AGENT_FILE_BASE_URL ?? 'http://localhost:3000'
 
 export async function POST(req: Request) {
   const formData = await req.formData()
@@ -27,6 +29,9 @@ export async function POST(req: Request) {
 
   await writeFile(filepath, Buffer.from(await file.arrayBuffer()))
 
-  // The path is the same in both the nextjs and openclaw containers
-  return Response.json({ agentPath: filepath, originalName: file.name })
+  // HTTP URL: accessible by the openclaw container via Docker-internal DNS.
+  // The browser tool and PDF tool both support http:// URLs.
+  const agentUrl = `${AGENT_FILE_BASE_URL}/api/files/${filename}`
+
+  return Response.json({ agentUrl, agentPath: filepath, originalName: file.name })
 }

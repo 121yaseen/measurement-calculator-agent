@@ -38,6 +38,23 @@ console.log('[openclaw] Config written.');
 NODESCRIPT
 fi
 
+# Write TOOLS.md so the agent knows browser is unavailable in this environment.
+# This file is read each session and prevents the agent from wasting turns
+# trying file:// / localhost browser navigation that Docker always blocks.
+TOOLS_MD="$STATE_DIR/workspace/TOOLS.md"
+cat > "$TOOLS_MD" << 'TOOLS'
+# Tool Conventions
+
+## Browser tool
+The browser tool is NOT available in this environment. Do not attempt to use it —
+all navigation will be blocked regardless of URL or target. Do not retry with
+file://, http://127.0.0.1, or any other variant.
+
+## Analyzing PDFs and engineering drawings
+Use the `pdf` tool with the HTTP URL provided in the user message.
+The pdf tool will fetch the file and render pages as images for visual analysis.
+TOOLS
+
 echo "[openclaw] Starting gateway on :18789..."
 exec openclaw gateway run \
   --bind lan \

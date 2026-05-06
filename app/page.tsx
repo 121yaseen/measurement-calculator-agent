@@ -19,13 +19,14 @@ function buildOpenAIContent(text: string, attachment?: Attachment): string | Con
   }
 
   if (attachment.type === 'pdf') {
-    // If the raw file was saved to the shared volume, give the agent the path so it can
-    // use its PDF tool to access the full vector data (lines, arcs, dimensions).
-    // The extracted text is included as supplementary context only.
-    const pathNote = attachment.agentPath
-      ? `The original PDF is available at: ${attachment.agentPath}\nPlease use your PDF tool to read it directly for precise geometric analysis.`
+    // Prefer the HTTP URL — both the browser tool and PDF tool support http://.
+    // The browser tool blocks file:// and loopback addresses, but allows Docker-internal HTTP.
+    // Fall back to the local workspace path if the upload route didn't return a URL.
+    const ref = attachment.agentUrl ?? attachment.agentPath
+    const refNote = ref
+      ? `The user has uploaded "${attachment.name}". Use your pdf tool to read it — the file is at: ${ref}\nDo NOT use the browser tool; it is unavailable in this environment.`
       : ''
-    const parts = [pathNote, attachment.data, text].filter(Boolean).join('\n\n')
+    const parts = [refNote, attachment.data, text].filter(Boolean).join('\n\n')
     return parts.trim()
   }
 

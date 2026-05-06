@@ -7,6 +7,8 @@ export interface Attachment {
   data: string
   /** Absolute path on the shared volume where the agent can read the raw PDF */
   agentPath?: string
+  /** HTTP URL the agent can use (browser tool + PDF tool both support http://) */
+  agentUrl?: string
 }
 
 export interface Message {

@@ -5,6 +5,8 @@ export interface Attachment {
   name: string
   /** base64 data URL for images; extracted plain text for PDFs */
   data: string
+  /** Absolute path on the shared volume where the agent can read the raw PDF */
+  agentPath?: string
 }
 
 export interface Message {

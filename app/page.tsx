@@ -7,21 +7,29 @@ import { CanvasPanel } from '@/components/CanvasPanel'
 import { streamChat } from '@/lib/streamChat'
 import type { Attachment, Message } from '@/lib/types'
 
-function buildOpenAIContent(
-  text: string,
-  attachment?: Attachment,
-): string | { type: string; text?: string; image_url?: { url: string } }[] {
+type ContentPart = { type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string } }
+
+function buildOpenAIContent(text: string, attachment?: Attachment): string | ContentPart[] {
   if (!attachment) return text
 
   if (attachment.type === 'image') {
-    const parts: { type: string; text?: string; image_url?: { url: string } }[] = [
-      { type: 'image_url', image_url: { url: attachment.data } },
-    ]
+    const parts: ContentPart[] = [{ type: 'image_url', image_url: { url: attachment.data } }]
     if (text) parts.push({ type: 'text', text })
     return parts
   }
 
-  return `${attachment.data}\n\n${text}`.trim()
+  if (attachment.type === 'pdf') {
+    // If the raw file was saved to the shared volume, give the agent the path so it can
+    // use its PDF tool to access the full vector data (lines, arcs, dimensions).
+    // The extracted text is included as supplementary context only.
+    const pathNote = attachment.agentPath
+      ? `The original PDF is available at: ${attachment.agentPath}\nPlease use your PDF tool to read it directly for precise geometric analysis.`
+      : ''
+    const parts = [pathNote, attachment.data, text].filter(Boolean).join('\n\n')
+    return parts.trim()
+  }
+
+  return text
 }
 
 export default function ChatPage() {

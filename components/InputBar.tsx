@@ -56,8 +56,15 @@ export function InputBar({ onSend, disabled }: Props) {
     setLoadingFile(true)
     try {
       if (file.type === 'application/pdf') {
+        // Upload raw bytes to shared storage so the openclaw agent can read the actual file
+        const form = new FormData()
+        form.append('file', file)
+        const res = await fetch('/api/upload', { method: 'POST', body: form })
+        const { agentPath } = res.ok ? await res.json() : {}
+
+        // Extract text as a lightweight preview shown in the chat bubble
         const data = await extractPdfText(file)
-        setAttachment({ type: 'pdf', name: file.name, data })
+        setAttachment({ type: 'pdf', name: file.name, data, agentPath })
       } else {
         const data = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader()

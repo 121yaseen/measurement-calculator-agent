@@ -1,0 +1,40 @@
+services:
+  openclaw:
+    build:
+      context: .
+      dockerfile: Dockerfile.openclaw
+    volumes:
+      # Named volume — persists openclaw state across restarts.
+      # On first boot the entrypoint writes a fresh config; no host openclaw install needed.
+      - openclaw-state:/openclaw-state
+      # Shared upload volume mounted inside the workspace — openclaw only allows
+      # file reads from within /openclaw-state/workspace (and a few other state dirs)
+      - uploads:/openclaw-state/workspace/uploads
+    environment:
+      OPENCLAW_STATE_DIR: /openclaw-state
+      OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_TOKEN}
+      # openclaw reads OPENAI_API_KEY automatically for the openai/gpt-4.1 provider
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENCLAW_DISABLE_BONJOUR: "1"
+    restart: unless-stopped
+
+  nextjs:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      # Same named volume, same path — nextjs writes here, openclaw reads from here
+      - uploads:/openclaw-state/workspace/uploads
+    environment:
+      # "openclaw" resolves to the gateway container via Docker's internal DNS
+      OPENCLAW_BASE_URL: http://openclaw:18789
+      OPENCLAW_TOKEN: ${OPENCLAW_TOKEN}
+    depends_on:
+      - openclaw
+    restart: unless-stopped
+
+volumes:
+  openclaw-state:
+  uploads:

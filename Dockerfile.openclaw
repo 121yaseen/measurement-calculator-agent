@@ -1,0 +1,19 @@
+FROM node:22-alpine
+
+# node-gyp (needed by tree-sitter-bash inside openclaw) requires Python + build tools
+RUN apk add --no-cache python3 make g++
+
+# openclaw requires Node >=22.12; node:22-alpine satisfies that
+RUN npm install -g openclaw
+
+WORKDIR /root
+
+ENV OPENCLAW_STATE_DIR=/openclaw-state \
+    OPENCLAW_DISABLE_BONJOUR=1
+
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+EXPOSE 18789
+
+ENTRYPOINT ["docker-entrypoint.sh"]

@@ -195,6 +195,75 @@ openclaw-chat/
 
 ---
 
+## Future plans
+
+### What's already in place
+
+The project ships as a fully self-contained Docker stack. A single `docker compose up --build` starts both the openclaw AI gateway and the Next.js web UI with no host dependencies beyond Docker. The two containers share a named volume for uploaded files, communicate over a Docker-internal network, and the gateway is protected by a token that only the backend holds. The stack is production-ready in the sense that it can be deployed on any host that runs Docker Compose.
+
+---
+
+### Agent capabilities — skills and visual communication
+
+The agent today operates from a single long system prompt. The next step is to break this into **skill files** — small, composable instruction modules that the agent loads per-situation. Planned skills include:
+
+- **User persona skill** — instructs the agent on how to read the user's background (engineer, estimator, fabricator) from early messages and adjust its language, level of detail, and question style accordingly
+- **Clarification skill** — defines exactly when to pause and ask versus when to proceed, how to frame ambiguous-point questions as short numbered choices rather than open-ended prompts, and how to prioritise the highest-impact question first
+- **Visual communication skill** — instructs the agent to produce structured output (JSON or SVG annotations) that the canvas panel can render: highlighted boundary overlays, dimension callouts, detected hole/slot markers, and uncertainty regions drawn directly on top of the original drawing
+- **Prompt improvement** — ongoing work to tighten the agent's self-understanding of its task, reduce unnecessary hedging on clear drawings, and improve the quality of intermediate state descriptions it passes back to the UI
+
+---
+
+### Canvas panel — interactive rendering and drawing
+
+The right-hand canvas is currently a placeholder. The full vision:
+
+- **Rendered state output** — after each agent turn the canvas shows the current working state: the detected outer boundary drawn as an SVG overlay on the original image, internal cutouts marked, dimension labels placed, and uncertain regions highlighted in a distinct colour
+- **Vector extraction display** — when the agent extracts a vector representation of the profile from a raster drawing it renders that vector so the user can visually verify it before the agent proceeds to calculate
+- **User annotation** — users can draw directly on the canvas to correct or clarify: redraw a boundary the agent got wrong, mark which hole to include or exclude, or add a missing dimension by clicking two points and typing a value
+- **Generative UI** — using generative UI tools the agent can dynamically render structured input widgets inside the canvas when it needs data: a unit selector, a scale picker, a dimension-confirmation table that the user edits in place rather than typing corrections in prose
+
+---
+
+### Result export
+
+Once a calculation is complete, users will be able to download the result as:
+
+- **PDF report** — the original drawing image, the detected boundary overlay, the dimension table, the full calculation trace, confidence levels, and the final area and perimeter result in a single shareable document
+- **CSV** — a flat row of extracted dimensions, area, perimeter, unit, and confidence for downstream use in costing or estimation tools
+
+---
+
+### Authentication, sessions, and chat history
+
+The current build has no user concept. Planned additions:
+
+- **Authentication** — user accounts with login so calculations are tied to a specific user
+- **Session and chat history** — each conversation is persisted; users can return to a previous calculation, review the agent's reasoning, or continue from where they left off
+- **UI upgrades** — conversation list sidebar, session naming, and the ability to fork a conversation from any point to explore a different interpretation of the same drawing
+
+---
+
+### Security hardening
+
+Several security improvements are planned beyond what is currently in place:
+
+- **Prompt injection protection** — server-side detection and rejection of user messages that attempt to override the system prompt or escape the agent's role
+- **File validation** — strict MIME type and magic-byte checks on upload; file size limits; image dimension caps to prevent oversized raster files from being passed to the agent
+- **Rate limiting** — per-IP throttling on `/api/upload` and `/api/chat` to prevent abuse and runaway API costs
+- **Periodic file deletion** — uploaded files are deleted automatically after a configurable TTL (e.g. 24 hours) so the volume does not grow unbounded and user data is not retained longer than needed
+- **Agent sandboxing** — ensure the openclaw gateway is inaccessible from outside the Docker network under all deployment configurations, with network policy rules to enforce this explicitly
+
+---
+
+### Observability
+
+- **Agent turn logging** — structured logs for every agent turn: which tool was called, what the agent's intermediate reasoning was, how long each step took, and what the agent returned
+- **Tracing** — distributed traces that connect a user message through the Next.js proxy to the openclaw gateway and back, making it easy to debug why the agent asked a particular question or produced an unexpected decomposition
+- **Cost tracking** — token usage per session surfaced in the UI so users and operators can see the cost of each calculation
+
+---
+
 ## Built with
 
 - [Next.js 16](https://nextjs.org) (App Router, standalone output)
